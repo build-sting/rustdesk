@@ -15,7 +15,6 @@ jobs:
     name: Build Windows x86_64
     runs-on: windows-2022
     env:
-      # 在此处注入自建服务器地址与公钥，优先从 GitHub Secrets 读取
       RENDEZVOUS_SERVER: ${{ secrets.RENDEZVOUS_SERVER }}
       RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
     steps:
@@ -41,10 +40,10 @@ jobs:
         with:
           version: "16.0"
 
-      - name: Install vcpkg dependencies
+      - name: Install vcpkg dependencies (Manifest Mode)
         shell: bash
         run: |
-          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static
+          vcpkg install --triplet x64-windows-static
 
       - name: Build Flutter Bridge and Core
         shell: bash
@@ -52,7 +51,7 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "cli"
           python3 build.py --target x86_64-pc-windows-msvc
 
-      - name: Build Windows Executable / Installer
+      - name: Build Windows Executable
         shell: bash
         run: |
           flutter config --enable-windows-desktop
