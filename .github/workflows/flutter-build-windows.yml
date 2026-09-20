@@ -48,7 +48,7 @@ jobs:
       - name: Build Flutter Bridge and Core
         shell: bash
         run: |
-          cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "cli"
+          cargo install flutter_rust_bridge_codegen --version 1.80.1
           python3 build.py --target x86_64-pc-windows-msvc
 
       - name: Build Windows Executable
