@@ -70,6 +70,69 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Configure custom RustDesk server
+        shell: pwsh
+        env:
+          RUSTDESK_ID_SERVER: ${{ vars.RUSTDESK_ID_SERVER }}
+          RUSTDESK_KEY: ${{ secrets.RUSTDESK_KEY }}
+        run: |
+          $path = "libs/hbb_common/src/config.rs"
+
+          if (!(Test-Path $path)) {
+            Write-Error "Cannot find $path"
+            exit 1
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:RUSTDESK_ID_SERVER)) {
+            Write-Error "RUSTDESK_ID_SERVER is empty"
+            exit 1
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:RUSTDESK_KEY)) {
+            Write-Error "RUSTDESK_KEY is empty"
+            exit 1
+          }
+
+          $content = [System.IO.File]::ReadAllText($path)
+
+          $serverPattern = 'pub const RENDEZVOUS_SERVERS: &\[&str\] = &\[[^\r\n]*\];'
+          $keyPattern = 'pub const RS_PUB_KEY: &str = "[^"]*";'
+
+          if ($content -notmatch $serverPattern) {
+            Write-Error "RENDEZVOUS_SERVERS not found"
+            exit 1
+          }
+
+          if ($content -notmatch $keyPattern) {
+            Write-Error "RS_PUB_KEY not found"
+            exit 1
+          }
+
+          $serverReplacement = 'pub const RENDEZVOUS_SERVERS: &[&str] = &["' + $env:RUSTDESK_ID_SERVER + '"];'
+          $keyReplacement = 'pub const RS_PUB_KEY: &str = "' + $env:RUSTDESK_KEY + '";'
+
+          $content = [regex]::Replace(
+            $content,
+            $serverPattern,
+            $serverReplacement
+          )
+
+          $content = [regex]::Replace(
+            $content,
+            $keyPattern,
+            $keyReplacement
+          )
+
+          [System.IO.File]::WriteAllText(
+            $path,
+            $content,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+
+          Write-Host "RustDesk custom server configuration applied."
+          Write-Host "ID Server: $env:RUSTDESK_ID_SERVER"
+          Write-Host "Public key configured."
+
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
